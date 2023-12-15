@@ -31,12 +31,36 @@
     </div>
 
     <script>
-        function startLottery() {
-            // 定義獎項
-            const prizes = ["一等獎", "二等獎", "三等獎", "鼓勵獎"];
+        let allowRepeat = false; // 設定是否允許同一獎項重複抽取
+
+        async function fetchPrizes() {
+            try {
+                const response = await fetch('prizes.json');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching prizes:', error);
+            }
+        }
+
+        async function startLottery() {
+            // 從外部檔案讀取獎項
+            const prizes = await fetchPrizes();
 
             // 隨機選擇一個獎項
-            const randomIndex = Math.floor(Math.random() * prizes.length);
+            let randomIndex;
+            if (allowRepeat) {
+                randomIndex = Math.floor(Math.random() * prizes.length);
+            } else {
+                // 如果不允許重複，則排除已經抽中的獎項
+                const remainingPrizes = prizes.filter((prize, index) => !prizeIsSelected(index));
+                if (remainingPrizes.length === 0) {
+                    alert("所有獎項都已經被抽完了！");
+                    return;
+                }
+                randomIndex = Math.floor(Math.random() * remainingPrizes.length);
+            }
+
             const selectedPrize = prizes[randomIndex];
 
             // 顯示抽獎結果
@@ -45,7 +69,7 @@
 
             // 添加旋轉動畫效果
             resultElement.style.animation = "rotate 2s ease-in-out";
-            
+
             // 按鈕設定為不可用，避免連續抽獎
             const buttonElement = document.querySelector("button");
             buttonElement.disabled = true;
@@ -54,7 +78,22 @@
             setTimeout(() => {
                 resultElement.style.animation = ""; // 清除動畫效果
                 buttonElement.disabled = false; // 恢復按鈕狀態
-            }, 1000);
+            }, 2000);
+
+            // 標記已經抽中的獎項（如果不允許重複）
+            if (!allowRepeat) {
+                markPrizeAsSelected(randomIndex);
+            }
+        }
+
+        const selectedPrizes = new Set();
+
+        function prizeIsSelected(index) {
+            return selectedPrizes.has(index);
+        }
+
+        function markPrizeAsSelected(index) {
+            selectedPrizes.add(index);
         }
     </script>
 
